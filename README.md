@@ -1,127 +1,135 @@
-# 金融市场数据库  
-目前只完成database部分（修改过的部分要在README文件里写出来）
-## Database
+# Game Market Project (金融市场数据库项目)
 
-### player
-字段 | 说明
----- | ----
-player_id | 主键，自增，玩家唯一 ID
-player_name | 玩家名称
-register_time | 注册时间
+这是一个基于 Spring Boot 和 Vue 3 的游戏资产交易市场项目。实现了前后端分离架构，包含完整的数据库设计、后端 API 和前端交互界面。
 
----
+## 🛠 技术栈 (Tech Stack)
 
-### item
-字段 | 说明
----- | ----
-item_id | 主键，自增，物品唯一 ID
-item_name | 物品名称
-rarity | 稀有度（common / rare / legendary）
-description | 物品描述
+- **Frontend**: Vue 3, Vite, Vue Router, Axios
+- **Backend**: Java 17, Spring Boot 3.3.5, Spring Data JPA
+- **Database**: PostgreSQL 16
+- **Build Tools**: Maven (Backend), NPM (Frontend)
 
----
+## 📂 项目结构 (Project Structure)
 
-### inventory
-（玩家持有的游戏物品）
+```
+Database-Project/
+├── backend/                 # 后端项目目录 (Spring Boot)
+│   ├── src/main/java/       # Java 源代码
+│   ├── src/main/resources/  # 配置文件 (application.properties)
+│   └── pom.xml              # Maven 依赖配置
+├── src/                     # 前端源代码 (Vue)
+│   ├── api/                 # API 接口封装
+│   ├── components/          # Vue 组件
+│   ├── views/               # 页面视图
+│   └── router/              # 路由配置
+├── database/                # 数据库脚本
+├── vite.config.js           # Vite 配置 (包含跨域代理)
+└── package.json             # 前端依赖配置
+```
 
-字段 | 说明
----- | ----
-inventory_id | 主键，自增
-player_id | 外键 → player.player_id
-item_id | 外键 → item.item_id
-quantity | 玩家持有数量
+## 🚀 快速开始 (Getting Started)
 
----
+### 1. 环境准备
+- JDK 17+
+- Node.js 18+
+- PostgreSQL 16 (推荐使用 Docker)
 
-### market_order
-（玩家挂单：包含 BUY / SELL）
+### 2. 启动数据库
+项目配置默认连接本地 PostgreSQL。
+```bash
+# 使用 Docker 启动 PostgreSQL (密码设置为 market)
+docker run --name market-postgres -e POSTGRES_PASSWORD=market -e POSTGRES_USER=market -e POSTGRES_DB=market -p 5432:5432 -d postgres:16
+```
+*注意：如果使用本地安装的 PostgreSQL，请确保修改 `backend/src/main/resources/application.properties` 中的连接信息。*
 
-字段 | 说明
----- | ----
-order_id | 主键，自增
-player_id | 外键 → player.player_id
-item_id | 外键 → item.item_id
-order_type | BUY / SELL
-price | 单价
-quantity | 下单数量
-status | PENDING / PARTIAL / FILLED / CANCELLED
-create_time | 创建时间
+### 3. 启动后端
+```bash
+cd backend
+mvn spring-boot:run
+```
+后端服务将启动在 `http://localhost:8080`。
+*启动时 `DataLoader` 会自动初始化测试数据（玩家、资产、挂单）。*
 
----
+### 4. 启动前端
+```bash
+# 安装依赖
+npm install
 
-### trade_record
-（订单撮合后的交易记录）
+# 启动开发服务器
+npm run dev
+```
+前端服务将启动在 `http://localhost:5173`。
 
-字段 | 说明
----- | ----
-trade_id | 主键，自增
-buy_order_id | 外键 → market_order.order_id
-sell_order_id | 外键 → market_order.order_id
-item_id | 外键 → item.item_id
-price | 成交价格
-quantity | 成交数量
-trade_time | 成交时间
+## 💾 数据库设计 (Database Schema)
 
----
+### Player (玩家)
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| player_id | Integer | 主键，自增 |
+| player_name | String | 玩家名称 |
+| level | Integer | 等级 |
+| register_time | DateTime | 注册时间 |
 
-### price_history
-（价格走势 / K 线数据）
+### Asset (资产/物品)
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| asset_id | Integer | 主键，自增 |
+| asset_name | String | 物品名称 |
+| asset_type | String | 类型 (Weapon, Armor, etc.) |
+| base_price | Decimal | 基础价格 |
 
-字段 | 说明
----- | ----
-history_id | 主键，自增
-item_id | 外键 → item.item_id
-price | 收盘价或最新成交价
-record_time | 记录时间
+### Wallet (钱包)
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| wallet_id | Integer | 主键，自增 |
+| player_id | Integer | 外键 -> Player |
+| balance | Decimal | 余额 |
 
-## Frontend
+### MarketOrder (市场挂单)
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| order_id | Integer | 主键，自增 |
+| player_id | Integer | 外键 -> Player |
+| asset_id | Integer | 外键 -> Asset |
+| order_type | String | BUY / SELL |
+| price | Decimal | 挂单价格 |
+| quantity | Integer | 数量 |
+| status | String | OPEN / FILLED / CANCELLED |
 
-本项目包含一个基于 Vue 3 + Vite 的前端应用，用于展示游戏金融市场的数据和交互。
+### TradeHistory (交易历史)
+| 字段 | 类型 | 说明 |
+| ---- | ---- | ---- |
+| trade_id | Integer | 主键，自增 |
+| buyer_id | Integer | 买家 ID |
+| seller_id | Integer | 卖家 ID |
+| asset_id | Integer | 资产 ID |
+| price | Decimal | 成交价格 |
+| quantity | Integer | 成交数量 |
+| trade_time | DateTime | 交易时间 |
 
-### 技术栈
-- **Vue 3**: 渐进式 JavaScript 框架
-- **Vite**: 下一代前端构建工具
-- **Vue Router**: Vue.js 的官方路由
-- **Pinia**: Vue 的专属状态管理库
-- **Axios**: 基于 promise 的网络请求库
-- **ECharts**: 一个基于 JavaScript 的开源可视化图表库
+## 🔌 API 接口 (API Endpoints)
 
-### 项目结构
-前端代码位于项目根目录下：
-- `src/`: 源代码目录
-  - `api/`: API 请求模块
-  - `assets/`: 静态资源（CSS, 图片等）
-  - `components/`: 公共组件
-  - `router/`: 路由配置
-  - `store/`: Pinia 状态管理
-  - `utils/`: 工具函数
-  - `views/`: 页面视图
-- `public/`: 公共静态文件
-- `vite.config.js`: Vite 配置文件
+### Market
+- `GET /api/market/listings`: 获取市场挂单列表
+- `GET /api/market/categories`: 获取物品分类
 
-### 功能页面
-- **市场 (Market)**: 浏览所有商品，查看市场行情。
-- **商品详情 (ItemDetail)**: 查看特定商品的详细信息和价格走势。
-- **交易 (Trade)**: 进行买入或卖出操作。
-- **背包 (Inventory)**: 查看玩家持有的物品。
-- **个人中心 (Profile)**: 管理个人信息。
-- **登录/注册 (Login/Register)**: 用户认证。
+### Trade
+- `POST /api/trade/orders`: 创建买单/卖单
+- `GET /api/trade/orders`: 获取用户的交易记录
 
-### 快速开始
+### User
+- `GET /api/user/profile/{id}`: 获取用户个人信息
+- `GET /api/user/inventory/{id}`: 获取用户背包物品
 
-1. **安装依赖**
-   ```bash
-   npm install
-   ```
+### Auth
+- `POST /api/auth/login`: 用户登录 (Mock)
+- `POST /api/auth/register`: 用户注册 (Mock)
 
-2. **启动开发服务器**
-   ```bash
-   npm run dev
-   ```
-   启动后访问: `http://localhost:5173`
-
-3. **构建生产版本**
-   ```bash
-   npm run build
-   ```
+## ✨ 已实现功能
+1. **全栈架构搭建**：Spring Boot 后端 + Vue3 前端。
+2. **数据库集成**：使用 JPA 自动建表，Docker 容器化数据库。
+3. **数据初始化**：系统启动时自动预加载测试用户、物品和市场挂单。
+4. **市场浏览**：前端展示热门商品和涨幅榜。
+5. **个人中心**：展示用户信息和交易历史。
+6. **背包系统**：查看用户持有的资产。
 
