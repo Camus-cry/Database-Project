@@ -34,35 +34,48 @@ Database-Project/
 ## 🚀 快速开始 (Getting Started)
 
 ### 1. 环境准备
-- JDK 17+
-- Node.js 18+
-- PostgreSQL 16 (推荐使用 Docker)
+- **JDK 21** (本项目使用 Java 21)
+- **Node.js 18+**
+- **PostgreSQL 16**
 
 ### 2. 启动数据库
-项目配置默认连接本地 PostgreSQL。
+确保 PostgreSQL 服务已启动，并创建了名为 `market` 的数据库和用户。
+
+**如果你使用 Docker:**
 ```bash
-# 使用 Docker 启动 PostgreSQL (密码设置为 market)
 docker run --name market-postgres -e POSTGRES_PASSWORD=market -e POSTGRES_USER=market -e POSTGRES_DB=market -p 5432:5432 -d postgres:16
 ```
-*注意：如果使用本地安装的 PostgreSQL，请确保修改 `backend/src/main/resources/application.properties` 中的连接信息。*
 
-### 3. 启动后端
+**如果你在 Dev Container / Codespaces 环境:**
+PostgreSQL 通常已经预装并启动。你可以直接使用以下命令初始化数据（如果需要）：
+```bash
+psql -h localhost -U market -d market -f database/market.sql
+```
+
+### 3. 启动后端 (Backend)
+打开一个新的终端窗口，运行：
 ```bash
 cd backend
 mvn spring-boot:run
 ```
-后端服务将启动在 `http://localhost:8080`。
-*启动时 `DataLoader` 会自动初始化测试数据（玩家、资产、挂单）。*
+- 后端服务启动在: `http://localhost:8080`
+- API 文档/测试: 可以使用 Postman 或 curl 测试 `/api/auth/login` 等接口。
 
-### 4. 启动前端
+### 4. 启动前端 (Frontend)
+打开另一个终端窗口，运行：
 ```bash
-# 安装依赖
+# 安装依赖 (仅第一次需要)
 npm install
 
 # 启动开发服务器
 npm run dev
 ```
-前端服务将启动在 `http://localhost:5173`。
+- 前端页面访问地址: `http://localhost:5173`
+
+### 5. 访问应用
+打开浏览器访问 `http://localhost:5173`。
+- **测试账号**: `testuser` / `password` (如果 DataLoader 已运行)
+- **注册**: 你也可以在注册页面创建一个新账号。
 
 ## 💾 数据库设计 (Database Schema)
 
