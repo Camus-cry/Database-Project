@@ -51,4 +51,22 @@ public class WalletService {
         w.setBalance(w.getBalance().subtract(amount));
         walletRepository.save(w);
     }
+
+    @Transactional
+    public Wallet recharge(Integer playerId, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Invalid recharge amount");
+        }
+        Wallet w = walletRepository.findByPlayerId(playerId);
+        if (w == null) {
+            w = new Wallet();
+            w.setPlayerId(playerId);
+            w.setBalance(amount);
+            w.setReserved(BigDecimal.ZERO);
+        } else {
+            BigDecimal bal = w.getBalance() == null ? BigDecimal.ZERO : w.getBalance();
+            w.setBalance(bal.add(amount));
+        }
+        return walletRepository.save(w);
+    }
 }
