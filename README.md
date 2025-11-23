@@ -134,19 +134,21 @@ npm run dev
 6. **背包系统**：查看用户持有的资产。
 
 ## 魏 11/23日更改（后端）
-1. **取消订单**：新增取消订单功能
-2.**支持冻结/预留**：
-3.**修改pom.xml**：使代码可以用本地psql链接数据库，不比使用Docker
-*注意：使用本地psql需按application.properties创建数据库
-用管理员账号 postgres 登录 psql
+1. **取消订单**：新增取消订单功能。
+2. **支持冻结/预留**：在进行交易时下买单需冻结资金或验证卖方持有物品。
+3. **修改pom.xml**：使代码可以用本地psql链接数据库，不必使用Docker。
+```bash
+# 1.用管理员账号 postgres 登录 psql
+# 2.直接省略自定义排序规则，仅指定 UTF-8 编码和 template0 模板
 CREATE DATABASE market WITH ENCODING 'UTF8' TEMPLATE template0;
--- 1. 创建 market 用户（密码 market）
+# 3.创建 market 用户（密码 market）
 CREATE USER market WITH PASSWORD 'market';
 
--- 2. 给用户授权 market 数据库所有权限
+# 4.给用户授权 market 数据库所有权限
 GRANT ALL PRIVILEGES ON DATABASE market TO market;
 
--- 3. 切换到 market 数据库，授权 schema 权限（避免创建表失败）
-\c market;  -- 提示符变成 market=#
+# 5.切换到 market 数据库，授权 schema 权限（避免创建表失败）
+\c market; .
 GRANT ALL PRIVILEGES ON SCHEMA public TO market;
-4.**充值功能**：支持用户充值
+```
+4. **充值功能**：支持用户充值
