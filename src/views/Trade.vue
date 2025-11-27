@@ -79,6 +79,8 @@ import NavBar from '../components/NavBar.vue'
 import PriceChart from '../components/PriceChart.vue'
 import { fetchListings } from '../api/market'
 import { createOrder } from '../api/trade'
+import { fetchProfile } from '../api/user'
+import { useUserStore } from '../store/user'
 
 const route = useRoute()
 const activeTab = ref('buy')
@@ -162,13 +164,54 @@ const executeTrade = async () => {
   }
 
   try {
-    await createOrder({
+    const userStore = useUserStore()
+    const playerId = Number(userStore.uid) || Number(localStorage.getItem('userId'))
+    if (!playerId) {
+      alert('请先登录')
+      return
+    }
+
+    const payload = {
       itemId: selectedItem.value,
       price: Number(price.value),
       amount: Number(amount.value),
-      type: activeTab.value
-    })
-    alert(`${activeTab.value === 'buy' ? '购买' : '出售'} 订单已提交`)
+      type: activeTab.value,
+      userId: playerId
+    }
+
+    // prevent duplicate submissions
+    if (executeTrade._pending) return
+    executeTrade._pending = true
+    const res = await createOrder(payload)
+    executeTrade._pending = false
+    console.log('createOrder response:', res)
+    // Update user's balance immediately if backend returned wallet info
+    try {
+      const userStore = useUserStore()
+      if (res && (res.balance !== undefined || res.available !== undefined)) {
+        const balRaw = res.balance !== undefined ? res.balance : res.available
+        const reservedRaw = res.reserved !== undefined ? res.reserved : 0
+        const balNum = Number(balRaw)
+        const reservedNum = Number(reservedRaw)
+        console.log('Updating userStore balance:', { balNum, reservedNum })
+        userStore.setBalance(balNum, reservedNum)
+      } else {
+        // Fallback: refresh profile from backend
+        const playerId = Number(userStore.uid) || Number(localStorage.getItem('userId'))
+        if (playerId) {
+          const profile = await fetchProfile(playerId)
+          if (profile) userStore.setUser(profile)
+        }
+      }
+    } catch (err) {
+      console.error('Profile refresh/update failed', err)
+    }
+    if (res && res.trades && res.trades.length > 0) {
+      const info = res.trades.map(t => `${t.quantity} x ${t.asset.assetName || t.asset.assetName} @ ${t.price}`).join('\n')
+      alert(`${activeTab.value === 'buy' ? '购买' : '出售'} 成交:\n` + info)
+    } else {
+      alert(`${activeTab.value === 'buy' ? '购买' : '出售'} 订单已提交`)
+    }
   } catch (error) {
     console.error(error)
     alert('交易失败: ' + (error.message || '未知错误'))

@@ -171,6 +171,3 @@ GRANT ALL PRIVILEGES ON DATABASE market TO market;
 GRANT ALL PRIVILEGES ON SCHEMA public TO market;
 ```
 4. **充值功能**：支持用户充值
-
-# 郭  11月26日更改 
-# 删除右侧图像并使得左侧物品栏扩充到整个页面 
