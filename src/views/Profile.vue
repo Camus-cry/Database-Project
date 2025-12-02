@@ -2,61 +2,79 @@
   <div class="page profile">
     <NavBar />
     <div class="container">
-      <div class="profile-header">
-        <div class="avatar">
-          <img src="https://via.placeholder.com/100" alt="Avatar">
-        </div>
-        <div class="user-info">
-          <h2>{{ userStore.name }}<span class="uid-tag">#{{ userStore.uid }}</span></h2>
-          <div class="tags">
-            <span class="tag vip">VIP {{ Math.floor(userStore.available / 10000) }}</span>
-            <span class="tag verified">已认证</span>
-          </div>
-        </div>
-        <div class="balance-card">
-          <p class="label">账户余额</p>
-          <p class="amount">{{ userStore.available.toLocaleString() }} G</p>
-          <button class="deposit-btn" @click="deposit">充值</button>
-        </div>
+      <div v-if="isLoading" class="loading-container">
+        <LoadingWave />
       </div>
-
-      <div class="content-grid">
-        <div class="section history">
-          <h3>交易历史</h3>
-          <div class="history-list">
-            <div class="history-item" v-for="record in history" :key="record.id">
-              <div class="icon" :class="record.type === 'buy' ? 'buy' : 'sell'">
-                {{ record.type === 'buy' ? '买' : '卖' }}
-              </div>
-              <div class="details">
-                <p class="name">{{ record.itemName }}</p>
-                <p class="date">{{ record.date }}</p>
-              </div>
-              <div class="amount" :class="record.type === 'buy' ? 'negative' : 'positive'">
-                {{ record.type === 'buy' ? '-' : '+' }}{{ Math.abs(record.price) }} G
-              </div>
+      <div v-else>
+        <div class="profile-header">
+          <div class="avatar" @click="triggerFileInput" title="点击修改头像">
+            <img :src="userStore.avatar || 'https://via.placeholder.com/100'" alt="Avatar" />
+            <div class="avatar-overlay">✏️</div>
+            <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" accept="image/*" />
+          </div>
+          <div class="user-info">
+            <h2>{{ userStore.name }}<span class="uid-tag">#{{ userStore.uid }}</span></h2>
+            <div class="tags">
+              <span class="tag vip">VIP {{ Math.floor(userStore.available / 10000) }}</span>
+              <span class="tag verified">已认证</span>
             </div>
+          </div>
+          <div class="balance-card">
+            <p class="label">账户余额</p>
+            <p class="amount">{{ (userStore.available || 0).toLocaleString() }} G</p>
+            <button class="deposit-btn" @click="deposit">充值</button>
           </div>
         </div>
 
-        <div class="section settings">
-          <h3>账户设置</h3>
-          <div class="setting-item">
-            <label>用户名</label>
-            <div class="input-group">
-              <input type="text" v-model="editName" :placeholder="userStore.name">
-              <button class="btn-small" @click="updateName">修改</button>
+        <div class="content-grid">
+
+          <div class="section history">
+            <div class="section-header">
+              <h3>交易历史</h3>
+              <router-link to="/history" class="view-all">查看全部</router-link>
+            </div>
+            <div class="history-list">
+              <div class="history-item" v-for="record in history" :key="record.id">
+                <div class="icon" :class="record.type === 'buy' ? 'buy' : 'sell'">
+                  {{ record.type === 'buy' ? '买' : '卖' }}
+                </div>
+                <div class="details">
+                  <p class="name">{{ record.itemName }}</p>
+                  <p class="date">{{ record.date }}</p>
+                </div>
+                <div class="amount" :class="record.type === 'buy' ? 'negative' : 'positive'">
+                  {{ record.type === 'buy' ? '-' : '+' }}{{ Math.abs(record.price) }} G
+                </div>
+              </div>
             </div>
           </div>
-          <div class="setting-item">
-            <label>邮箱</label>
-            <input type="email" :value="userStore.email" disabled>
+
+          <div class="section settings">
+            <h3>账户设置</h3>
+            <div class="setting-item">
+              <label>用户名</label>
+              <div class="input-group">
+                <input type="text" v-model="editName" :placeholder="userStore.name" />
+                <button class="btn-small" @click="updateName">修改</button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>头像链接</label>
+              <div class="input-group">
+                <input type="text" v-model="editAvatar" placeholder="输入图片URL" />
+                <button class="btn-small" @click="updateAvatar">修改</button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>邮箱</label>
+              <input type="email" :value="userStore.email" disabled />
+            </div>
+            <div class="setting-item">
+              <label>密码</label>
+              <button class="change-pwd">修改密码</button>
+            </div>
+            <button class="logout-btn" @click="logout">退出登录</button>
           </div>
-          <div class="setting-item">
-            <label>密码</label>
-            <button class="change-pwd">修改密码</button>
-          </div>
-          <button class="logout-btn" @click="logout">退出登录</button>
         </div>
       </div>
     </div>
@@ -67,15 +85,50 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '../components/NavBar.vue'
+import LoadingWave from '../components/LoadingWave.vue'
 import { fetchProfile, updateProfile } from '../api/user'
 import { fetchOrders } from '../api/trade'
 import { recharge } from '../api/wallet'
 import { useUserStore } from '../store/user'
+import request from '../utils/request'
 
 const router = useRouter()
 const userStore = useUserStore()
 const history = ref([])
 const editName = ref('')
+const editAvatar = ref('')
+const showAvatarInput = ref(false)
+const fileInput = ref(null)
+const isLoading = ref(true)
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file', file)
+  const uid = userStore.id || localStorage.getItem('userId')
+  formData.append('userId', uid)
+
+  try {
+    const res = await request.post('/upload/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    if (res && res.url) {
+      userStore.avatar = res.url
+      alert('头像上传成功')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('头像上传失败')
+  }
+}
 
 onMounted(async () => {
   const userId = localStorage.getItem('userId')
@@ -84,19 +137,29 @@ onMounted(async () => {
     return
   }
 
+  isLoading.value = true
   try {
     // Fetch Profile
     const profileRes = await fetchProfile(userId)
     if (profileRes) {
       userStore.setUser(profileRes)
       editName.value = userStore.name
+      editAvatar.value = userStore.avatar || ''
     }
 
     // Fetch History
-    const ordersRes = await fetchOrders({ userId: userId, limit: 5 })
-    history.value = ordersRes || []
+    const ordersRes = await fetchOrders({ userId: userId, page: 0, size: 5 })
+    // If backend returns paged object, extract content
+    if (ordersRes && ordersRes.content) {
+      history.value = ordersRes.content
+    } else {
+      history.value = ordersRes || []
+    }
+
   } catch (e) {
     console.error(e)
+  } finally {
+    isLoading.value = false
   }
 })
 
@@ -108,6 +171,19 @@ const updateName = async () => {
     userStore.name = editName.value
     localStorage.setItem('username', editName.value)
     alert('用户名修改成功')
+  } catch (e) {
+    console.error(e)
+    alert('修改失败')
+  }
+}
+
+const updateAvatar = async () => {
+  if (!editAvatar.value) return
+  
+  try {
+    await updateProfile(userStore.uid, { avatar: editAvatar.value })
+    userStore.avatar = editAvatar.value
+    alert('头像修改成功')
   } catch (e) {
     console.error(e)
     alert('修改失败')
@@ -243,9 +319,26 @@ const deposit = async () => {
 }
 
 .section h3 {
+  margin: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   padding-bottom: 10px;
+}
+
+.view-all {
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.view-all:hover {
+  text-decoration: underline;
 }
 
 .history-item {
@@ -266,8 +359,8 @@ const deposit = async () => {
   font-weight: bold;
 }
 
-.icon.buy { background: rgba(255, 77, 77, 0.2); color: var(--down); }
-.icon.sell { background: rgba(76, 175, 80, 0.2); color: var(--up); }
+.icon.buy { background: rgba(244, 67, 54, 0.2); color: var(--up); } /* Red bg for Buy (Up) */
+.icon.sell { background: rgba(76, 175, 80, 0.2); color: var(--down); } /* Green bg for Sell (Down) */
 
 .details {
   flex: 1;
@@ -276,8 +369,8 @@ const deposit = async () => {
 .details .name { font-weight: bold; }
 .details .date { font-size: 12px; color: var(--text-light); }
 
-.amount.negative { color: var(--down); }
-.amount.positive { color: var(--up); }
+.amount.negative { color: var(--up); } /* Red for spending money */
+.amount.positive { color: var(--down); } /* Green for earning money */
 
 .setting-item {
   margin-bottom: 20px;
@@ -312,9 +405,33 @@ const deposit = async () => {
   background: rgba(255, 77, 77, 0.2);
   color: var(--down);
   border: 1px solid var(--down);
-  padding: 12px;
-  border-radius: 6px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.btn-small {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: none;
   cursor: pointer;
-  margin-top: 20px;
+  font-size: 12px;
+  background: var(--primary);
+  color: white;
+}
+
+.cancel-btn {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--up);
+  border: 1px solid var(--up);
+  margin-left: 10px;
+}
+
+.cancel-btn:hover {
+  background: rgba(244, 67, 54, 0.4);
 }
 </style>

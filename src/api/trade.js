@@ -11,3 +11,12 @@ export function createOrder(payload) {
 export function fetchOrders(params) {
   return request.get('/trade/orders', { params })
 }
+
+export function fetchPendingOrders(userId) {
+  return request.get('/trade/pending', { params: { userId } })
+}
+
+export function cancelOrder(orderId) {
+  const userId = Number(localStorage.getItem('userId'))
+  return request.post('/trade/cancel', { orderId, userId })
+}

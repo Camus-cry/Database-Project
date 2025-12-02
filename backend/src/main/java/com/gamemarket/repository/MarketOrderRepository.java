@@ -9,4 +9,5 @@ import java.util.List;
 public interface MarketOrderRepository extends JpaRepository<MarketOrder, Integer> {
     List<MarketOrder> findByStatus(String status);
     List<MarketOrder> findByPlayerId(Integer playerId);
+    List<MarketOrder> findByPlayerIdAndStatus(Integer playerId, String status);
 }

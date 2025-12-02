@@ -47,7 +47,7 @@ public class TradeController {
                 }
             }
 
-            var trades = orderService.createOrder(payload, requesterId);
+            orderService.createOrder(payload, requesterId);
 
             // Fetch updated wallet for requester to provide immediate balance feedback
             var wallet = walletRepository.findByPlayerId(requesterId);
@@ -62,7 +62,6 @@ public class TradeController {
 
             return Map.of(
                 "message", "Order created successfully",
-                "trades", trades,
                 "balance", balance,
                 "reserved", reserved,
                 "available", available
@@ -73,28 +72,99 @@ public class TradeController {
     }
 
     @GetMapping("/orders")
-    public List<Map<String, Object>> getOrders(@RequestParam(required = false) Integer userId) {
+    public Object getOrders(
+            @RequestParam(required = false) Integer userId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         if (userId != null) {
-            // Return trade history for profile
-            List<TradeHistory> history = tradeHistoryRepository.findByPlayerId(userId);
-            return history.stream().map(h -> Map.<String, Object>of(
-                "id", h.getTradeId(),
-                "type", "buy", // Simplified
-                "itemName", h.getAsset().getAssetName(),
-                "date", h.getTradeTime().toString(),
-                "price", h.getPrice(),
-                "amount", h.getQuantity()
-            )).collect(Collectors.toList());
+            List<TradeHistory> history;
+            long totalElements = 0;
+            int totalPages = 0;
+
+            if (page != null && size != null) {
+                org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("tradeTime").descending());
+                org.springframework.data.domain.Page<TradeHistory> historyPage = tradeHistoryRepository.findByPlayerId(userId, pageable);
+                history = historyPage.getContent();
+                totalElements = historyPage.getTotalElements();
+                totalPages = historyPage.getTotalPages();
+            } else {
+                history = tradeHistoryRepository.findByPlayerId(userId);
+                totalElements = history.size();
+                totalPages = 1;
+            }
+            
+            // Collect all order IDs to fetch ownership info
+            java.util.Set<Integer> orderIds = new java.util.HashSet<>();
+            for (TradeHistory h : history) {
+                orderIds.add(h.getBuyOrderId());
+                orderIds.add(h.getSellOrderId());
+            }
+            
+            // Fetch all related orders to determine if user was buyer or seller
+            List<MarketOrder> orders = orderRepository.findAllById(orderIds);
+            Map<Integer, Integer> orderOwnerMap = orders.stream()
+                .collect(Collectors.toMap(MarketOrder::getOrderId, MarketOrder::getPlayerId));
+
+            List<Map<String, Object>> content = history.stream().map(h -> {
+                String type = "unknown";
+                Integer buyerId = orderOwnerMap.get(h.getBuyOrderId());
+                Integer sellerId = orderOwnerMap.get(h.getSellOrderId());
+                
+                if (buyerId != null && buyerId.equals(userId)) {
+                    type = "buy";
+                } else if (sellerId != null && sellerId.equals(userId)) {
+                    type = "sell";
+                }
+                
+                return Map.<String, Object>of(
+                    "id", h.getTradeId(),
+                    "type", type,
+                    "itemName", h.getAsset().getAssetName(),
+                    "date", h.getTradeTime().toString(),
+                    "price", h.getPrice(),
+                    "amount", h.getQuantity()
+                );
+            }).collect(Collectors.toList());
+
+            if (page != null && size != null) {
+                return Map.of(
+                    "content", content,
+                    "totalElements", totalElements,
+                    "totalPages", totalPages,
+                    "number", page,
+                    "size", size
+                );
+            } else {
+                return content;
+            }
         }
         return List.of();
     }
-    @DeleteMapping("/orders/{orderId}")
-    public Map<String, String> cancelOrder(@PathVariable Integer orderId) {
+
+    @GetMapping("/pending")
+    public List<Map<String, Object>> getPendingOrders(@RequestParam Integer userId) {
+        return orderRepository.findByPlayerIdAndStatus(userId, "OPEN").stream()
+            .map(o -> Map.<String, Object>of(
+                "orderId", o.getOrderId(),
+                "assetId", o.getAsset().getAssetId(),
+                "assetName", o.getAsset().getAssetName(),
+                "price", o.getPrice(),
+                "quantity", o.getQuantity(),
+                "type", o.getOrderType(),
+                "createTime", o.getCreateTime()
+            ))
+            .collect(Collectors.toList());
+    }
+
+    @PostMapping("/cancel")
+    public Map<String, Object> cancelOrder(@RequestBody Map<String, Object> payload) {
         try {
-            orderService.cancelOrder(orderId, 1);
+            Integer orderId = Integer.parseInt(payload.get("orderId").toString());
+            Integer userId = Integer.parseInt(payload.get("userId").toString());
+            orderService.cancelOrder(orderId, userId);
             return Map.of("message", "Order cancelled successfully");
-        } catch (RuntimeException ex) {
-            return Map.of("message", "Cancel failed: " + ex.getMessage());
+        } catch (Exception e) {
+            return Map.of("message", "Cancel failed: " + e.getMessage());
         }
     }
 }

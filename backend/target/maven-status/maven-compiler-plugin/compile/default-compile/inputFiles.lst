@@ -1,13 +1,17 @@
+D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\config\WebConfig.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\AuthController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\ItemController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\MarketController.java
+D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\NotificationController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\RechargeRequest.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\TradeController.java
+D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\UploadController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\UserController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\controller\WalletController.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\DataLoader.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\Asset.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\MarketOrder.java
+D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\Notification.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\Player.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\PlayerAsset.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\TradeHistory.java
@@ -15,6 +19,7 @@ D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\entity\Wall
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\GameMarketApplication.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\AssetRepository.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\MarketOrderRepository.java
+D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\NotificationRepository.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\PlayerAssetRepository.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\PlayerRepository.java
 D:\python\Database-Project-main\backend\src\main\java\com\gamemarket\repository\TradeHistoryRepository.java
